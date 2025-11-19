@@ -1,48 +1,36 @@
 """
-Database Schemas
+Database Schemas for Smart Timetable & Productivity App
 
-Define your MongoDB collection schemas here using Pydantic models.
-These schemas are used for data validation in your application.
-
-Each Pydantic model represents a collection in your database.
-Model name is converted to lowercase for the collection name:
-- User -> "user" collection
-- Product -> "product" collection
-- BlogPost -> "blogs" collection
+Each Pydantic model corresponds to a MongoDB collection. The collection
+name is the lowercase of the class name (e.g., Task -> "task").
 """
+from pydantic import BaseModel, Field, ConfigDict
+from typing import Optional, List
+from datetime import datetime
 
-from pydantic import BaseModel, Field
-from typing import Optional
+class Task(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    title: str = Field(..., description="Short task title")
+    description: Optional[str] = Field(None, description="Details/context")
+    project: Optional[str] = Field(None, description="Project or category")
+    estimate_minutes: int = Field(30, ge=5, le=480, description="Estimated duration in minutes")
+    energy: Optional[str] = Field(None, description="low | medium | high")
+    priority: str = Field("medium", description="low | medium | high | urgent")
+    deadline: Optional[datetime] = Field(None, description="Hard deadline (UTC)")
+    status: str = Field("todo", description="todo | in_progress | done")
+    tags: List[str] = Field(default_factory=list)
 
-# Example schemas (replace with your own):
+class TimeBlock(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    task_id: Optional[str] = Field(None, description="Linked task id as string")
+    title: str
+    start: datetime
+    end: datetime
+    status: str = Field("planned", description="planned | in_progress | completed | slipped")
+    context: Optional[str] = None
 
-class User(BaseModel):
-    """
-    Users collection schema
-    Collection name: "user" (lowercase of class name)
-    """
-    name: str = Field(..., description="Full name")
-    email: str = Field(..., description="Email address")
-    address: str = Field(..., description="Address")
-    age: Optional[int] = Field(None, ge=0, le=120, description="Age in years")
-    is_active: bool = Field(True, description="Whether user is active")
-
-class Product(BaseModel):
-    """
-    Products collection schema
-    Collection name: "product" (lowercase of class name)
-    """
-    title: str = Field(..., description="Product title")
-    description: Optional[str] = Field(None, description="Product description")
-    price: float = Field(..., ge=0, description="Price in dollars")
-    category: str = Field(..., description="Product category")
-    in_stock: bool = Field(True, description="Whether product is in stock")
-
-# Add your own schemas here:
-# --------------------------------------------------
-
-# Note: The Flames database viewer will automatically:
-# 1. Read these schemas from GET /schema endpoint
-# 2. Use them for document validation when creating/editing
-# 3. Handle all database operations (CRUD) directly
-# 4. You don't need to create any database endpoints!
+class Routine(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    name: str
+    cadence: str = Field(..., description="cron-like or simple 'daily/mwf'")
+    steps: List[str] = Field(default_factory=list)
